@@ -9,6 +9,7 @@ import Distribution.PackageDescription hiding (buildInfo, includeDirs)
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.PreProcess
+import Distribution.Simple.PreProcess.Types (Suffix)
 import Distribution.Simple.Program
 import Distribution.Simple.Setup hiding (Flag)
 import Distribution.System
@@ -20,6 +21,9 @@ import System.Environment
 #endif
 #if MIN_VERSION_Cabal(3,8,1)
 #define MIN_VERSION_Cabal_3_8_1
+#endif
+#if MIN_VERSION_Cabal(3,12,0)
+#define MIN_VERSION_Cabal_3_12_0
 #endif
 #endif
 
@@ -116,7 +120,7 @@ isIgnoredCFlag :: String -> Bool
 isIgnoredCFlag flag = flag `elem` ignoredCFlags || isIncludeFlag flag || isWarningFlag flag
 
 isIgnoredCxxFlag :: String -> Bool
-isIgnoredCxxFlag flag = flag `elem` ignoredCxxFlags || isIncludeFlag flag || isWarningFlag flag
+isIgnoredCxxFlag flag = flag `elem` ignoredCxxFlags || isWarningFlag flag
 
 main :: IO ()
 main = do
@@ -185,14 +189,21 @@ main = do
               where origHsc buildInfo' =
                       fromMaybe
                         ppHsc2hs
+#ifdef MIN_VERSION_Cabal_3_12_0
+                        (lookup (Suffix "hsc") origHookedPreprocessors)
+#else
                         (lookup "hsc" origHookedPreprocessors)
+#endif
                         buildInfo'
                         localBuildInfo
 #ifdef MIN_VERSION_Cabal_2_0_0
                         componentLocalBuildInfo
 #endif
+#ifdef MIN_VERSION_Cabal_3_12_0
+      in [(Suffix "hsc", newHsc)] ++ origHookedPreprocessors,
+#else
       in [("hsc", newHsc)] ++ origHookedPreprocessors,
-
+#endif
     buildHook = \packageDesc localBuildInfo userHooks buildFlags ->
       do addLLVMToLdLibraryPath (configFlags localBuildInfo)
          buildHook origUserHooks packageDesc localBuildInfo userHooks buildFlags,
