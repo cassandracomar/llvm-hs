@@ -44,10 +44,10 @@ extra-source-files:
 tested-with: GHC == 8.8.1
 extra-source-files: CHANGELOG.md
 
-source-repository head
-  type: git
-  location: git://github.com/llvm-hs/llvm-hs.git
-  branch: llvm-head-unstable
+-- source-repository head
+--   type: git
+--   location: git://github.com/cassandracomar/llvm-hs.git
+--   branch: llvm-16
 
 flag llvm-with-rtti
   description: assume llvm was built with LLVM_ENABLE_RTTI=ON (default is OFF)

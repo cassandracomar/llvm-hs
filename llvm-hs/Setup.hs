@@ -120,7 +120,7 @@ isIgnoredCFlag :: String -> Bool
 isIgnoredCFlag flag = flag `elem` ignoredCFlags || isIncludeFlag flag || isWarningFlag flag
 
 isIgnoredCxxFlag :: String -> Bool
-isIgnoredCxxFlag flag = flag `elem` ignoredCxxFlags || isWarningFlag flag
+isIgnoredCxxFlag flag = flag `elem` ignoredCxxFlags || isIncludeFlag flag || isWarningFlag flag
 
 main :: IO ()
 main = do
@@ -152,7 +152,7 @@ main = do
                 condTreeData = condTreeData libraryCondTree <> mempty {
                     libBuildInfo =
                       mempty {
-                        ccOptions = llvmCxxFlags,
+                        cxxOptions = llvmCxxFlags,
                         extraLibs = stdLib : libs_static,
                         extraGHCiLibs = libs_shared
                       }
@@ -164,51 +164,5 @@ main = do
             configExtraIncludeDirs = includeDirs ++ configExtraIncludeDirs confFlags
            }
       addLLVMToLdLibraryPath configFlags'
-      confHook simpleUserHooks (genericPackageDescription', hookedBuildInfo) configFlags',
-
-    hookedPreProcessors =
-      let origHookedPreprocessors = hookedPreProcessors origUserHooks
-#ifdef MIN_VERSION_Cabal_2_0_0
-          newHsc buildInfo localBuildInfo componentLocalBuildInfo =
-#else
-          newHsc buildInfo localBuildInfo =
-#endif
-              PreProcessor {
-                  platformIndependent = platformIndependent (origHsc buildInfo),
-#ifdef MIN_VERSION_Cabal_3_8_1
-                  ppOrdering = \_ _ modules -> pure modules,
-#endif
-                  runPreProcessor = \inFiles outFiles verbosity -> do
-                      llvmConfig <- getLLVMConfig (configFlags localBuildInfo)
-                      llvmCFlags <- do
-                          rawLlvmCFlags <- llvmConfig ["--cflags"]
-                          return . filter (not . isIgnoredCFlag) $ words rawLlvmCFlags
-                      let buildInfo' = buildInfo { ccOptions = "-Wno-variadic-macros" : llvmCFlags }
-                      runPreProcessor (origHsc buildInfo') inFiles outFiles verbosity
-              }
-              where origHsc buildInfo' =
-                      fromMaybe
-                        ppHsc2hs
-#ifdef MIN_VERSION_Cabal_3_12_0
-                        (lookup (Suffix "hsc") origHookedPreprocessors)
-#else
-                        (lookup "hsc" origHookedPreprocessors)
-#endif
-                        buildInfo'
-                        localBuildInfo
-#ifdef MIN_VERSION_Cabal_2_0_0
-                        componentLocalBuildInfo
-#endif
-#ifdef MIN_VERSION_Cabal_3_12_0
-      in [(Suffix "hsc", newHsc)] ++ origHookedPreprocessors,
-#else
-      in [("hsc", newHsc)] ++ origHookedPreprocessors,
-#endif
-    buildHook = \packageDesc localBuildInfo userHooks buildFlags ->
-      do addLLVMToLdLibraryPath (configFlags localBuildInfo)
-         buildHook origUserHooks packageDesc localBuildInfo userHooks buildFlags,
-
-    testHook = \args packageDesc localBuildInfo userHooks testFlags ->
-      do addLLVMToLdLibraryPath (configFlags localBuildInfo)
-         testHook origUserHooks args packageDesc localBuildInfo userHooks testFlags
+      confHook simpleUserHooks (genericPackageDescription', hookedBuildInfo) configFlags'
    }
