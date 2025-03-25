@@ -86,21 +86,6 @@ getLLVMConfig confFlags = do
                      (configPrograms confFlags)
   return $ getProgramOutput verbosity program
 
-addToLdLibraryPath :: String -> IO ()
-addToLdLibraryPath path = do
-  let (ldLibraryPathVar, ldLibraryPathSep) =
-        case buildOS of
-          OSX -> ("DYLD_LIBRARY_PATH",":")
-          _ -> ("LD_LIBRARY_PATH",":")
-  v <- try $ getEnv ldLibraryPathVar :: IO (Either SomeException String)
-  setEnv ldLibraryPathVar (path ++ either (const "") (ldLibraryPathSep ++) v)
-
-addLLVMToLdLibraryPath :: ConfigFlags -> IO ()
-addLLVMToLdLibraryPath confFlags = do
-  llvmConfig <- getLLVMConfig confFlags
-  [libDir] <- liftM lines $ llvmConfig ["--libdir"]
-  addToLdLibraryPath libDir
-
 -- | These flags are not relevant for us and dropping them allows
 -- linking against LLVM build with Clang using GCC
 ignoredCxxFlags :: [String]
@@ -163,6 +148,5 @@ main = do
             configExtraLibDirs = libDirs ++ configExtraLibDirs confFlags,
             configExtraIncludeDirs = includeDirs ++ configExtraIncludeDirs confFlags
            }
-      addLLVMToLdLibraryPath configFlags'
       confHook simpleUserHooks (genericPackageDescription', hookedBuildInfo) configFlags'
    }
