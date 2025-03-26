@@ -9,7 +9,6 @@ import Distribution.PackageDescription hiding (buildInfo, includeDirs)
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.PreProcess
-import Distribution.Simple.PreProcess.Types (Suffix)
 import Distribution.Simple.Program
 import Distribution.Simple.Setup hiding (Flag)
 import Distribution.System
